@@ -4,5 +4,6 @@
 - integrate with poetry(?) and remove .coveragerc file
 - fix working dir (gunicorn fails to start if not inside src/)
 - do we want to support templates and MVT pattern?
+- re-write "parse" library -> simplify and exclude type-validation (use Pydantic instead?)
 
 - refactor tests

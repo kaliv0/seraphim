@@ -1,2 +1,0 @@
-[run]
-omit = venv/*,tests/*,src/app.py,src/__init__.py
