@@ -4,7 +4,7 @@ from src.api import API
 
 @pytest.fixture
 def api():
-    return API()
+    return API(templates_dir="example/templates")
 
 
 @pytest.fixture

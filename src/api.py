@@ -9,9 +9,12 @@ from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 
 
 class API:
-    def __init__(self, templates_dir="../templates"):  # FIXME
+    def __init__(self, templates_dir=None):
         self.routes = {}
-        self.templates_env = Environment(loader=FileSystemLoader(os.path.abspath(templates_dir)))
+        if templates_dir is not None:
+            self.templates_env = Environment(
+                loader=FileSystemLoader(os.path.abspath(templates_dir))
+            )
 
     def __call__(self, environ, start_response):
         request = Request(environ)

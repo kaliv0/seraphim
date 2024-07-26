@@ -1,7 +1,7 @@
-from api import API
+from src.api import API
 
 # TODO: technically this module is not part of the framework -> it's just an example
-app = API()
+app = API(templates_dir="example/templates")
 
 
 # TODO: move to routers module?
@@ -56,5 +56,6 @@ app.add_route("/sample", handler)
 @app.route("/template")
 def template_handler(req, resp):
     resp.body = app.template(
-        "index.html", context={"title": "Hello world", "name": "Blue Baloo"}
+        "index.html",
+        context={"title": "Hello world", "name": "Blue Baloo", "bleh": "Bleh", "meh": "Meh!!!"},
     ).encode()

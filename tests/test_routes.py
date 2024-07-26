@@ -13,6 +13,7 @@ def test_route_overlap_throws_exception(api):
         resp.text = "HOME"
 
     with pytest.raises(AssertionError):
+
         @api.route("/home")
         def home2(req, resp):
             resp.text = "HOME"
