@@ -1,4 +1,4 @@
-name: CI  
+name: ci  
 on:  
   push:
   pull_request:
@@ -24,7 +24,9 @@ jobs:
       with:
         path: ./.venv
         key: venv-${{ hashFiles('poetry.lock') }}
-    - name: Install the project dependencies
+    - name: Install project dependencies
       run: poetry install
-    - name: Run the automated tests (for example)
-      run: poetry run pytest -v
+    - name: Run lint
+      run: poetry run ruff format --line-length 100 .
+    - name: Run tests
+      run: poetry run pytest -v --cov=.
