@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "anqa"
+version = "0.1.0"
+description = ""
+authors = ["kaliv0 <kaloyan.ivanov88@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+gunicorn = "^22.0.0"
+parse = "^1.20.2"
+webob = "^1.8.7"
+
+# FIXME: dev-deps
+ruff = "^0.5.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

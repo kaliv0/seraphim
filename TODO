@@ -1,0 +1,2 @@
+- use werkzeug instead of WebOb (for Request, Response obj + Gunicorn)
+- research for ASGI (see Bocadillo)
