@@ -1,2 +1,7 @@
 - use werkzeug instead of WebOb (for Request, Response obj + Gunicorn)
 - research for ASGI (see Bocadillo)
+
+- integrate with poetry(?) and remove .coveragerc file
+- fix working dir (gunicorn fails to start if not inside src/)
+
+- refactor tests
