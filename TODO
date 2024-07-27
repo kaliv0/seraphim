@@ -6,5 +6,6 @@
 - do we want to support templates and MVT pattern?
 - re-write "parse" library -> simplify and exclude type-validation (use Pydantic instead?)
 - make installable -> add "install" step with poetry to ci.yml
+- fix ci to check formatting without modifying
 
 - refactor tests

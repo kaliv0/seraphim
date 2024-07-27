@@ -11,8 +11,3 @@ def test_custom_exception_handler(api, client):
     response = client.get("http://testserver/")
 
     assert response.text == "AttributeErrorHappened"
-
-
-# TODO: move test
-def test_404_is_returned_for_nonexistent_static_file(client):
-    assert client.get(f"http://testserver/main.css)").status_code == 404

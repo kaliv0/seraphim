@@ -8,11 +8,14 @@ from requests import Session as RequestsSession  # TODO: do we need aliases?
 from whitenoise import WhiteNoise
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 
+from src.middleware import Middleware
+
 
 class API:
     def __init__(self, templates_dir=None, static_dir=None):
         self.routes = {}
         self.exception_handler = None
+        self.middleware = Middleware(self)
 
         # TODO: fix, handle default dirs
         if templates_dir is not None:
@@ -24,7 +27,14 @@ class API:
 
     def __call__(self, environ, start_response):
         # return self.wsgi_app(environ, start_response)
-        return self.whitenoise(environ, start_response)
+        # return self.whitenoise(environ, start_response)
+        # return self.middleware(environ, start_response)
+
+        path_info = environ["PATH_INFO"]
+        if path_info.startswith("/static"):
+            environ["PATH_INFO"] = path_info[len("/static") :]
+            return self.whitenoise(environ, start_response)
+        return self.middleware(environ, start_response)
 
     def wsgi_app(self, environ, start_response):
         request = Request(environ)
@@ -37,7 +47,10 @@ class API:
         return self.templates_env.get_template(template_name).render(**context)
 
     def add_exception_handler(self, exception_handler):
-        self.exception_handler =  exception_handler
+        self.exception_handler = exception_handler
+
+    def add_middleware(self, middleware_cls):
+        self.middleware.add(middleware_cls)
 
     def add_route(self, path, handler):
         assert path not in self.routes, "Route already exists"
