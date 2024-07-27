@@ -20,8 +20,10 @@ jobs:
     - name: Install poetry
       uses: abatilo/actions-poetry@v2
     - name: Install project dependencies
-      run: poetry install
+      run: poetry install --with dev
     - name: Run lint
-      run: poetry run ruff format --line-length 100 .
+      run:  |
+        poetry run ruff check --fix
+        poetry run ruff format
     - name: Run tests
       run: poetry run pytest -v --cov=./rabat

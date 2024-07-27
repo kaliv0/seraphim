@@ -1,37 +1,33 @@
 [tool.poetry]
 name = "rabat"
 version = "0.1.0"
-description = ""
+description = "Simple REST framework"
 authors = ["kaliv0 <kaloyan.ivanov88@gmail.com>"]
 readme = "README.md"
 license = "LICENSE"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-gunicorn = "^22.0.0"
 parse = "^1.20.2"
 webob = "^1.8.7"
+jinja2 = "^3.1.4"
+whitenoise = "^6.7.0"
 
-# FIXME: dev-deps
+[tool.poetry.group.dev.dependencies]
 ruff = "^0.5.5"
-
+gunicorn = "^22.0.0"
 # used for testing
 pytest = "^8.3.2"
 requests = "^2.32.3"
 requests-wsgi-adapter = "^0.4.1"
 pytest-cov = "^5.0.0"
-jinja2 = "^3.1.4"
-whitenoise = "^6.7.0"
-
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.ruff]
+line-length = 100
+
 [tool.coverage.report]
 fail_under = 80
-
-#[tool.coverage.run]
-#branch = true
-#source = ["rabat"]
-#omit = ["__init__.py"]
