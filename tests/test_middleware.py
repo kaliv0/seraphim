@@ -1,4 +1,4 @@
-from src.middleware import Middleware
+from rabat.middleware import Middleware
 
 
 def test_middleware_methods_are_called(api, client):

@@ -1,5 +1,5 @@
 import pytest
-from src.api import API
+from rabat.api import API
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-from src.api import API
+from rabat.api import API
 
 FILE_DIR = "css"
 FILE_NAME = "main.css"

@@ -1,14 +1,15 @@
-import inspect
+# import inspect
 import os
 
 from jinja2 import Environment, FileSystemLoader
 from parse import parse
-from webob import Request, Response
+from webob import Request  # ,Response
 from requests import Session as RequestsSession  # TODO: do we need aliases?
 from whitenoise import WhiteNoise
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 
-from src.middleware import Middleware
+from .middleware import Middleware
+from .response import Response
 
 
 class API:
@@ -52,29 +53,37 @@ class API:
     def add_middleware(self, middleware_cls):
         self.middleware.add(middleware_cls)
 
-    def add_route(self, path, handler):
-        assert path not in self.routes, "Route already exists"
-        self.routes[path] = handler
+    def add_route(self, path, handler, allowed_methods=None):
+        assert path not in self.routes, "Such route already exists."
+        if allowed_methods is None:
+            # TODO: extract constant
+            allowed_methods = ["get", "post", "put", "patch", "delete", "options"]
+        self.routes[path] = {"handler": handler, "allowed_methods": allowed_methods}
 
-    def route(self, path):
+    def route(self, path, allowed_methods=None):
         def wrapper(handler):
-            self.add_route(path, handler)
+            self.add_route(path, handler, allowed_methods)
             return handler
 
         return wrapper
 
     def handle_request(self, request):
         response = Response()
-        handler, kwargs = self.find_handler(request_path=request.path)
+        handler_data, kwargs = self.find_handler(request_path=request.path)
         try:
-            if handler is not None:
-                if inspect.isclass(handler):
+            if handler_data is not None:
+                handler = handler_data["handler"]
+                allowed_methods = handler_data["allowed_methods"]
+                # if inspect.isclass(handler):
+                if isinstance(handler, type):
                     # TODO: do we need to call handler?
                     handler = getattr(handler(), request.method.lower(), None)
                     if handler is None:
                         raise AttributeError(
                             f"Method not allowed: {request.method}"
                         )  # TODO: should we return 500?
+                elif request.method.lower() not in allowed_methods:
+                    raise AttributeError("Method not allowed", request.method)
                 handler(request, response, **kwargs)
             else:
                 self.default_response(response)
@@ -86,10 +95,10 @@ class API:
         return response
 
     def find_handler(self, request_path):
-        for path, handler in self.routes.items():
+        for path, handler_data in self.routes.items():
             parse_result = parse(path, request_path)
             if parse_result is not None:
-                return handler, parse_result.named
+                return handler_data, parse_result.named
         return None, None
 
     @staticmethod

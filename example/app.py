@@ -1,5 +1,5 @@
-from src.api import API
-from src.middleware import Middleware
+from rabat import API
+from rabat import Middleware
 
 # TODO: technically this module is not part of the framework -> it's just an example
 app = API(templates_dir="example/templates", static_dir="example/static")
@@ -54,12 +54,30 @@ app.add_route("/sample", handler)
 
 
 ###################################
+# @app.route("/template")
+# def template_handler(req, resp):
+#     resp.body = app.template(
+#         "index.html",
+#         context={"title": "Hello world", "name": "Blue Baloo", "foo": "Foo", "bar": "Bar!!!"},
+#     ).encode()
+
+
 @app.route("/template")
 def template_handler(req, resp):
-    resp.body = app.template(
+    resp.html = app.template(
         "index.html",
-        context={"title": "Hello world", "name": "Blue Baloo", "bleh": "Bleh", "meh": "Meh!!!"},
-    ).encode()
+        context={"title": "Hello world", "name": "Blue Baloo", "foo": "Foo", "bar": "Bar!!!"},
+    )
+
+
+@app.route("/json")
+def json_handler(req, resp):
+    resp.json = {"name": "data", "type": "JSON"}
+
+
+@app.route("/text")
+def text_handler(req, resp):
+    resp.text = "This is a simple text"
 
 
 ##################################

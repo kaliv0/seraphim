@@ -24,4 +24,4 @@ jobs:
     - name: Run lint
       run: poetry run ruff format --line-length 100 .
     - name: Run tests
-      run: poetry run pytest -v --cov=./src
+      run: poetry run pytest -v --cov=./rabat

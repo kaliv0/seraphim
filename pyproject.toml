@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["kaliv0 <kaloyan.ivanov88@gmail.com>"]
 readme = "README.md"
+license = "LICENSE"
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -32,5 +33,5 @@ fail_under = 80
 
 #[tool.coverage.run]
 #branch = true
-#source = ["src"]
+#source = ["rabat"]
 #omit = ["__init__.py"]
