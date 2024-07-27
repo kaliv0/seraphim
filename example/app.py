@@ -1,7 +1,7 @@
 from src.api import API
 
 # TODO: technically this module is not part of the framework -> it's just an example
-app = API(templates_dir="example/templates")
+app = API(templates_dir="example/templates", static_dir="example/static")
 
 
 # TODO: move to routers module?
@@ -59,3 +59,16 @@ def template_handler(req, resp):
         "index.html",
         context={"title": "Hello world", "name": "Blue Baloo", "bleh": "Bleh", "meh": "Meh!!!"},
     ).encode()
+
+
+##################################
+def custom_exception_handler(request, response, exception_cls):
+    response.text = str(exception_cls)
+
+
+app.add_exception_handler(custom_exception_handler)
+
+
+@app.route("/exception")
+def exception_throwing_handler(request, response):
+    raise AssertionError("This handler should not be used.")

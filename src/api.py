@@ -5,18 +5,28 @@ from jinja2 import Environment, FileSystemLoader
 from parse import parse
 from webob import Request, Response
 from requests import Session as RequestsSession  # TODO: do we need aliases?
+from whitenoise import WhiteNoise
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 
 
 class API:
-    def __init__(self, templates_dir=None):
+    def __init__(self, templates_dir=None, static_dir=None):
         self.routes = {}
+        self.exception_handler = None
+
+        # TODO: fix, handle default dirs
         if templates_dir is not None:
             self.templates_env = Environment(
                 loader=FileSystemLoader(os.path.abspath(templates_dir))
             )
+        if static_dir is not None:
+            self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir)
 
     def __call__(self, environ, start_response):
+        # return self.wsgi_app(environ, start_response)
+        return self.whitenoise(environ, start_response)
+
+    def wsgi_app(self, environ, start_response):
         request = Request(environ)
         response = self.handle_request(request)
         return response(environ, start_response)
@@ -25,6 +35,9 @@ class API:
         if context is None:
             context = {}
         return self.templates_env.get_template(template_name).render(**context)
+
+    def add_exception_handler(self, exception_handler):
+        self.exception_handler =  exception_handler
 
     def add_route(self, path, handler):
         assert path not in self.routes, "Route already exists"
@@ -40,17 +53,23 @@ class API:
     def handle_request(self, request):
         response = Response()
         handler, kwargs = self.find_handler(request_path=request.path)
-        if handler is not None:
-            if inspect.isclass(handler):
-                # TODO: do we need to call handler?
-                handler = getattr(handler(), request.method.lower(), None)
-                if handler is None:
-                    raise AttributeError(
-                        f"Method not allowed: {request.method}"
-                    )  # TODO: should we return 500?
-            handler(request, response, **kwargs)
-        else:
-            self.default_response(response)
+        try:
+            if handler is not None:
+                if inspect.isclass(handler):
+                    # TODO: do we need to call handler?
+                    handler = getattr(handler(), request.method.lower(), None)
+                    if handler is None:
+                        raise AttributeError(
+                            f"Method not allowed: {request.method}"
+                        )  # TODO: should we return 500?
+                handler(request, response, **kwargs)
+            else:
+                self.default_response(response)
+        except Exception as e:  # TODO: change exception type
+            if self.exception_handler is None:
+                raise e
+            else:
+                self.exception_handler(request, response, e)
         return response
 
     def find_handler(self, request_path):
