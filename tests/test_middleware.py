@@ -21,7 +21,7 @@ def test_middleware_methods_are_called(api, client):
 
     @api.route("/")
     def index(req, res):
-        res.text = "YOLO"
+        res.text = "HELLO"
 
     client.get("http://testserver/")
 
