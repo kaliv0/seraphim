@@ -1,4 +1,4 @@
-# import inspect
+import inspect
 import os
 
 from jinja2 import Environment, FileSystemLoader
@@ -10,6 +10,8 @@ from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 
 from .middleware import Middleware
 from .response import Response
+
+ALLOWED_METHODS = ["get", "post", "put", "patch", "delete", "options"]
 
 
 class API:
@@ -55,10 +57,12 @@ class API:
 
     def add_route(self, path, handler, allowed_methods=None):
         assert path not in self.routes, "Such route already exists."
-        if allowed_methods is None:
-            # TODO: extract constant
-            allowed_methods = ["get", "post", "put", "patch", "delete", "options"]
-        self.routes[path] = {"handler": handler, "allowed_methods": allowed_methods}
+        # if allowed_methods is None:
+        #     allowed_methods = ALLOWED_METHODS
+        self.routes[path] = {
+            "handler": handler,
+            "allowed_methods": allowed_methods if allowed_methods else ALLOWED_METHODS,
+        }
 
     def route(self, path, allowed_methods=None):
         def wrapper(handler):
@@ -74,8 +78,8 @@ class API:
             if handler_data is not None:
                 handler = handler_data["handler"]
                 allowed_methods = handler_data["allowed_methods"]
-                # if inspect.isclass(handler):
-                if isinstance(handler, type):
+                # if isinstance(handler, type):
+                if inspect.isclass(handler):
                     # TODO: do we need to call handler?
                     handler = getattr(handler(), request.method.lower(), None)
                     if handler is None:

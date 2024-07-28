@@ -6,4 +6,4 @@
 - remove gunicorn as core deps
 
 - refactor tests
-- fix running lint in ci
+- extract SQL as const

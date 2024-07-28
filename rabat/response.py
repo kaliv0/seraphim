@@ -17,7 +17,7 @@ class Response:
         response = WebObResponse(
             body=self.body,
             content_type=self.content_type,
-            status=self.status_code,  # FIXME
+            status=self.status_code,
         )
         return response(environ, start_response)
 
