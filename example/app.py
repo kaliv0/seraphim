@@ -1,5 +1,5 @@
-from serafin import API
-from serafin import Middleware
+from seraphim import API
+from seraphim import Middleware
 
 # TODO: technically this module is not part of the framework -> it's just an example
 app = API(templates_dir="example/templates", static_dir="example/static")

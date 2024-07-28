@@ -7,4 +7,4 @@ from .orm import Column as Column
 from .orm import ForeignKey as ForeignKey
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

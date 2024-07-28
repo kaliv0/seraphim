@@ -1,4 +1,4 @@
-from serafin.api import API
+from seraphim.api import API
 
 FILE_DIR = "css"
 FILE_NAME = "main.css"

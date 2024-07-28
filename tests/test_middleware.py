@@ -1,4 +1,4 @@
-from serafin.middleware import Middleware
+from seraphim.middleware import Middleware
 
 
 def test_middleware_methods_are_called(api, client):

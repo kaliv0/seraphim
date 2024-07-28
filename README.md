@@ -1,7 +1,13 @@
-# Serafín
+<p align="center">
+  <img src="https://github.com/kaliv0/seraphim/blob/main/seraphim.jpg?raw=true" alt="Seraphim">
+</p>
+
+---
+
+# Seraphim
 simple REST framework
 
-[![tests](https://github.com/kaliv0/serafin/actions/workflows/ci.yml/badge.svg)](https://github.com/kaliv0/serafin/actions/workflows/ci.yml)
-[![Python 3.x](https://img.shields.io/pypi/pyversions/serafin.svg?logo=python&logoColor=white)](https://pypi.org/project/serafin/)
-![PyPI](https://img.shields.io/pypi/v/serafin.svg)
-[![License](https://img.shields.io/badge/license-GPL%203.0-blue.svg)](https://github.com/kaliv0/serafin/blob/main/LICENSE)
+[![tests](https://img.shields.io/github/actions/workflow/status/kaliv0/seraphim/ci.yml)](https://github.com/kaliv0/seraphim/actions/workflows/ci.yml)
+![Python 3.x](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=Python&logoColor=white)
+[![PyPI](https://img.shields.io/pypi/v/seraphim.svg)](https://pypi.org/project/seraphim/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](https://github.com/kaliv0/seraphim/blob/main/LICENSE)

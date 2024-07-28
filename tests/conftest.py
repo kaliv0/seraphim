@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from serafin import API, Database, Table, Column, ForeignKey
+from seraphim import API, Database, Table, Column, ForeignKey
 
 
 DB_PATH = "./tests/resources/test.db"
