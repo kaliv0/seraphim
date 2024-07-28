@@ -1,4 +1,4 @@
-from rabat.middleware import Middleware
+from serafin.middleware import Middleware
 
 
 def test_middleware_methods_are_called(api, client):

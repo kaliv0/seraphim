@@ -1,4 +1,4 @@
-from rabat.api import API
+from serafin.api import API
 
 FILE_DIR = "css"
 FILE_NAME = "main.css"

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "rabat"
+name = "serafin"
 version = "0.1.0"
 description = "Simple REST framework"
 authors = ["kaliv0 <kaloyan.ivanov88@gmail.com>"]
@@ -16,7 +16,6 @@ whitenoise = "^6.7.0"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.5"
 gunicorn = "^22.0.0"
-# used for testing
 pytest = "^8.3.2"
 requests = "^2.32.3"
 requests-wsgi-adapter = "^0.4.1"
