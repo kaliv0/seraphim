@@ -99,3 +99,24 @@ def test_get_author_by_id(db, Author):
     assert john_from_db.age == 43
     assert john_from_db.name == "John Doe"
     assert john_from_db.id == 1
+
+
+def test_get_book(db, Author, Book):
+    db.create(Author)
+    db.create(Book)
+    john = Author(name="John Doe", age=43)
+    arash = Author(name="Arash Kun", age=50)
+    book = Book(title="Building an ORM", published=False, author=john)
+    book2 = Book(title="Scoring Goals", published=True, author=arash)
+    db.save(john)
+    db.save(arash)
+    db.save(book)
+    db.save(book2)
+
+    # TODO: split in two tests -> get_by_id, get_all_test_foreign_keys
+    book_from_db = db.all(Book)[1]
+    book_from_db_by_id = db.get(Book, 2)
+
+    assert book_from_db.title == book_from_db_by_id.title == "Scoring Goals"
+    assert book_from_db.author.name == book_from_db_by_id.author.name == "Arash Kun"
+    assert book_from_db.author.id == book_from_db_by_id.author.id == 2

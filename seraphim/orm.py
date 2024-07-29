@@ -30,23 +30,24 @@ class Database:
 
     def all(self, table):
         sql, fields = table._get_select_all_sql()
-
-        result = []
-        for row in self.conn.execute(sql).fetchall():
-            instance = table()
-            for name, value in zip(fields, row):
-                setattr(instance, name, value)
-            result.append(instance)
-        return result
+        return [
+            self._prepare_instance(table, fields, row) for row in self.conn.execute(sql).fetchall()
+        ]
 
     def get(self, table, id):
         sql, fields, params = table._get_select_where_sql(id=id)
-
         row = self.conn.execute(sql, params).fetchone()
         if row is None:
             raise Exception(f"{table.__name__} instance with id {id} does not exist")
+        return self._prepare_instance(table, fields, row)
+
+    def _prepare_instance(self, table, fields, row):
         instance = table()
         for field, value in zip(fields, row):
+            if field.endswith("_id"):
+                field = field[:-3]
+                fk = getattr(table, field)
+                value = self.get(fk.table, id=value)
             setattr(instance, field, value)
         return instance
 
@@ -57,8 +58,6 @@ class Table:
             "id": None,  # TODO: don't hardcode 'id'
             **kwargs,
         }
-        # for key, value in kwargs.items():
-        #     self._data[key] = value
 
     def __getattribute__(self, key):
         _data = super().__getattribute__("_data")
@@ -81,7 +80,6 @@ class Table:
                 fields.append(f"{name} {field.sql_type}")
             elif isinstance(field, ForeignKey):
                 fields.append(f"{name}_id INTEGER")
-
         return CREATE_TABLE_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
 
     def _get_insert_sql(self):
@@ -112,6 +110,8 @@ class Table:
     def _get_select_all_sql(cls):
         SELECT_ALL_SQL = "SELECT {fields} FROM {name};"
         fields = ["id"]
+
+        # TODO: extract duplicate logic
         for name, field in inspect.getmembers(cls):
             if isinstance(field, Column):
                 fields.append(name)

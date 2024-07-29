@@ -1,4 +1,4 @@
-- use werkzeug instead of WebOb (for Request, Response obj + Gunicorn)
+- use werkzeug instead of WebOb (for Request, Response obj + Gunicorn) or re-write from scratch
 - research for ASGI (see Bocadillo)
 
 - do we want to support templates and MVT pattern?
@@ -6,4 +6,9 @@
 - remove gunicorn as core deps
 
 - refactor tests
-- extract SQL as const
+- add coverage badge?
+
+- add support in where clauses for other fields (in addition to id)
+- refactor select_tables_sql
+- NB: verify that all types of select etc work with FK's and reading their properties
+- refactor _select_all and _select_where => combine in single method with optional where clause
