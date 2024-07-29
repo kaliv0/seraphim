@@ -138,7 +138,7 @@ class Table:
                 values.append(getattr(self, name))
                 placeholders.append("?")
             elif isinstance(field, ForeignKey):
-                fields.append(name + "_id")
+                fields.append(f"{name}_id")
                 values.append(getattr(self, name).id)
                 placeholders.append("?")
 
@@ -157,7 +157,7 @@ class Table:
             if isinstance(field, Column):
                 fields.append(name)
             elif isinstance(field, ForeignKey):
-                fields.append(name + "_id")
+                fields.append(f"{name}_id")
 
         where_clause = ""
         if kwargs:
@@ -180,7 +180,7 @@ class Table:
             if isinstance(field, Column):
                 fields.append(name)
             elif isinstance(field, ForeignKey):
-                fields.append(name + "_id")
+                fields.append(f"{name}_id")
 
         sql = SELECT_ALL_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
         return sql, fields
@@ -196,7 +196,7 @@ class Table:
                 fields.append(name)
                 values.append(getattr(self, name))
             elif isinstance(field, ForeignKey):
-                fields.append(name + "_id")
+                fields.append(f"{name}_id")
                 values.append(getattr(self, name).id)
         values.append(getattr(self, "id"))
 
