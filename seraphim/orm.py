@@ -1,6 +1,6 @@
 import inspect
+import logging
 import sqlite3
-
 
 SQLITE_TYPE_MAP = {
     int: "INTEGER",
@@ -18,16 +18,9 @@ class Database:
     @property
     def tables(self):
         SELECT_TABLES_SQL = "SELECT name FROM sqlite_master WHERE type = 'table';"
-        return [x[0] for x in self.conn.execute(SELECT_TABLES_SQL).fetchall()]  # FIXME
+        return [x[0] for x in self.conn.execute(SELECT_TABLES_SQL).fetchall()]
 
     def create(self, table):
-        # TODO: refactor with cursor.close()
-        # cursor = self.conn.cursor()
-        # try:
-        #     cursor.execute(table._get_create_sql())
-        #     self.conn.commit()
-        # finally:
-        #     cursor.close()
         self.conn.execute(table._get_create_sql())
 
     def save(self, instance):
@@ -36,52 +29,36 @@ class Database:
         instance._data["id"] = cursor.lastrowid
         self.conn.commit()
 
-    def get_all(self, table):
-        sql, fields = table._get_select_all_sql()
-        result = []
-        for row in self.conn.execute(sql).fetchall():
-            instance = table()
-            for field, value in zip(fields, row):
-                if field.endswith("_id"):
-                    field = field[:-3]
-                    fk = getattr(table, field)
-                    value = self.get_by_id(fk.table, id=value)
-                setattr(instance, field, value)
-            result.append(instance)
-        return result
+    def all(self, table):
+        # sql, fields = table._get_select_all_sql()
+        sql, fields, _ = table._get_select_where_sql()
+        return [
+            self._prepare_instance(table, fields, row) for row in self.conn.execute(sql).fetchall()
+        ]
 
-    def get_by_id(self, table, id):
-        sql, fields, params = table._get_select_where_sql(id=id)
+    def get(self, table, **kwargs):
+        sql, fields, params = table._get_select_where_sql(**kwargs)
+        row = self.conn.execute(sql, params).fetchall()
+        if row:
+            return self._prepare_instance(table, fields, row[0])
+        return row
+
+    def get_one(self, table, **kwargs):
+        sql, fields, params = table._get_select_where_sql(**kwargs)
         row = self.conn.execute(sql, params).fetchone()
-        if row is None:
+        if not row:
             return row
+        return self._prepare_instance(table, fields, row)
 
+    def _prepare_instance(self, table, fields, row):
         instance = table()
         for field, value in zip(fields, row):
             if field.endswith("_id"):
                 field = field[:-3]
                 fk = getattr(table, field)
-                value = self.get_by_id(fk.table, id=value)
+                value = self.get_one(fk.table, id=value)
             setattr(instance, field, value)
         return instance
-
-    def filter(self, table, **kwargs):
-        sql, fields, params = table._get_select_where_sql(**kwargs)
-        rows = self.conn.execute(sql, params).fetchall()
-        if len(rows) == 0:
-            return rows
-
-        result = []
-        for row in rows:
-            instance = table()
-            for field, value in zip(fields, row):
-                if field.endswith("_id"):
-                    field = field[:-3]
-                    fk = getattr(table, field)
-                    value = self.get_by_id(fk.table, id=value)
-                setattr(instance, field, value)
-            result.append(instance)
-        return result
 
     def update(self, instance):
         sql, values = instance._get_update_sql()
@@ -94,11 +71,10 @@ class Database:
         self.conn.commit()
 
 
-######################################
 class Table:
     def __init__(self, **kwargs):
         self._data = {
-            "id": None,  # TODO: don't hardcode 'id'?
+            "id": None,  # TODO: don't hardcode 'id'
             **kwargs,
         }
 
@@ -150,6 +126,19 @@ class Table:
         return sql, values
 
     @classmethod
+    def _get_select_all_sql(cls):
+        SELECT_ALL_SQL = "SELECT {fields} FROM {name};"
+        fields = ["id"]
+        for name, field in inspect.getmembers(cls):
+            if isinstance(field, Column):
+                fields.append(name)
+            elif isinstance(field, ForeignKey):
+                fields.append(name + "_id")
+
+        sql = SELECT_ALL_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
+        return sql, fields
+
+    @classmethod
     def _get_select_where_sql(cls, **kwargs):
         SELECT_WHERE_SQL = "SELECT {fields} FROM {name}{where_clause};"
         fields = ["id"]
@@ -171,21 +160,8 @@ class Table:
         params = list(kwargs.values())
         return sql, fields, params
 
-    @classmethod
-    def _get_select_all_sql(cls):
-        # TODO: simplify to 'select *'?
-        SELECT_ALL_SQL = "SELECT {fields} FROM {name};"
-        fields = ["id"]
-        for name, field in inspect.getmembers(cls):
-            if isinstance(field, Column):
-                fields.append(name)
-            elif isinstance(field, ForeignKey):
-                fields.append(name + "_id")
-
-        sql = SELECT_ALL_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
-        return sql, fields
-
     def _get_update_sql(self):
+        # TODO: similar _insert without placeholders
         UPDATE_SQL = "UPDATE {name} SET {fields} WHERE id = ?"
 
         cls = self.__class__
@@ -212,7 +188,6 @@ class Table:
         return sql, [id]
 
 
-########################################
 class Column:
     def __init__(self, column_type):
         self.type = column_type
@@ -222,7 +197,6 @@ class Column:
         return SQLITE_TYPE_MAP[self.type]
 
 
-########################################
 class ForeignKey:
     def __init__(self, table):
-        self.table = table  # TODO: rename
+        self.table = table
