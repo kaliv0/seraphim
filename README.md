@@ -5,7 +5,7 @@
 ---
 
 # Seraphim
-simple REST framework
+Simple REST Framework
 
 [![tests](https://img.shields.io/github/actions/workflow/status/kaliv0/seraphim/ci.yml)](https://github.com/kaliv0/seraphim/actions/workflows/ci.yml)
 ![Python 3.x](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=Python&logoColor=white)
