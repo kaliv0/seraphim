@@ -1,5 +1,7 @@
 import sqlite3
 
+import pytest
+
 
 def test_create_db(db):
     assert isinstance(db.conn, sqlite3.Connection)
@@ -113,10 +115,28 @@ def test_get_book(db, Author, Book):
     db.save(book)
     db.save(book2)
 
-    # TODO: split in two tests -> get_by_id, get_all_test_foreign_keys
-    book_from_db = db.all(Book)[1]
-    book_from_db_by_id = db.get(Book, 2)
+    book_from_db = db.get(Book, id=2, published=True)
+    assert book_from_db.title == "Scoring Goals"
+    assert book_from_db.author.name == "Arash Kun"
+    assert book_from_db.author.id == 2
 
-    assert book_from_db.title == book_from_db_by_id.title == "Scoring Goals"
-    assert book_from_db.author.name == book_from_db_by_id.author.name == "Arash Kun"
-    assert book_from_db.author.id == book_from_db_by_id.author.id == 2
+    with pytest.raises(ValueError) as e:
+        db.get(Book, id=200, title="FizzBuzz")
+    assert str(e.value) == "Book instance with id=200, title=FizzBuzz does not exist"
+
+
+def test_query_all_books(db, Author, Book):
+    db.create(Author)
+    db.create(Book)
+    john = Author(name="John Doe", age=43)
+    arash = Author(name="Arash Kun", age=50)
+    book = Book(title="Building an ORM", published=False, author=john)
+    book2 = Book(title="Scoring Goals", published=True, author=arash)
+    db.save(john)
+    db.save(arash)
+    db.save(book)
+    db.save(book2)
+
+    books = db.all(Book)
+    assert len(books) == 2
+    assert books[1].author.name == "Arash Kun"

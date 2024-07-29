@@ -34,11 +34,13 @@ class Database:
             self._prepare_instance(table, fields, row) for row in self.conn.execute(sql).fetchall()
         ]
 
-    def get(self, table, id):
-        sql, fields, params = table._get_select_where_sql(id=id)
+    def get(self, table, **kwargs):
+        # TODO: should we use **kwargs everywhere?
+        sql, fields, params = table._get_select_where_sql(**kwargs)
         row = self.conn.execute(sql, params).fetchone()
         if row is None:
-            raise Exception(f"{table.__name__} instance with id {id} does not exist")
+            filter_data = ", ".join([f"{k}={v}" for k, v in kwargs.items()])
+            raise ValueError(f"{table.__name__} instance with {filter_data} does not exist")
         return self._prepare_instance(table, fields, row)
 
     def _prepare_instance(self, table, fields, row):
@@ -122,8 +124,8 @@ class Table:
         return sql, fields
 
     @classmethod
-    def _get_select_where_sql(cls, id):
-        SELECT_WHERE_SQL = "SELECT {fields} FROM {name} WHERE id = ?;"
+    def _get_select_where_sql(cls, **kwargs):
+        SELECT_WHERE_SQL = "SELECT {fields} FROM {name} WHERE {where_clause};"
         fields = ["id"]
         for name, field in inspect.getmembers(cls):
             if isinstance(field, Column):
@@ -131,11 +133,11 @@ class Table:
             elif isinstance(field, ForeignKey):
                 fields.append(name + "_id")
 
+        where_clause = " AND ".join([f"{k} = ?" for k in kwargs])
         sql = SELECT_WHERE_SQL.format(
-            name=cls.__name__.lower(),
-            fields=", ".join(fields),
+            name=cls.__name__.lower(), fields=", ".join(fields), where_clause=where_clause
         )
-        params = [id]
+        params = list(kwargs.values())
         return sql, fields, params
 
 

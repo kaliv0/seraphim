@@ -12,3 +12,4 @@
 - refactor select_tables_sql
 - NB: verify that all types of select etc work with FK's and reading their properties
 - refactor _select_all and _select_where => combine in single method with optional where clause
+    - do further refinement of where clauses => currently not able to retrieve data from "FK-objects"
