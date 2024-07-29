@@ -1,4 +1,5 @@
 import inspect
+import logging
 import sqlite3
 
 SQLITE_TYPE_MAP = {
@@ -29,18 +30,24 @@ class Database:
         self.conn.commit()
 
     def all(self, table):
-        sql, fields = table._get_select_all_sql()
+        # sql, fields = table._get_select_all_sql()
+        sql, fields, _ = table._get_select_where_sql()
         return [
             self._prepare_instance(table, fields, row) for row in self.conn.execute(sql).fetchall()
         ]
 
     def get(self, table, **kwargs):
-        # TODO: should we use **kwargs everywhere?
+        sql, fields, params = table._get_select_where_sql(**kwargs)
+        row = self.conn.execute(sql, params).fetchall()
+        if row:
+            return self._prepare_instance(table, fields, row[0])
+        return row
+
+    def get_one(self, table, **kwargs):
         sql, fields, params = table._get_select_where_sql(**kwargs)
         row = self.conn.execute(sql, params).fetchone()
-        if row is None:
-            filter_data = ", ".join([f"{k}={v}" for k, v in kwargs.items()])
-            raise ValueError(f"{table.__name__} instance with {filter_data} does not exist")
+        if not row:
+            return row
         return self._prepare_instance(table, fields, row)
 
     def _prepare_instance(self, table, fields, row):
@@ -49,9 +56,19 @@ class Database:
             if field.endswith("_id"):
                 field = field[:-3]
                 fk = getattr(table, field)
-                value = self.get(fk.table, id=value)
+                value = self.get_one(fk.table, id=value)
             setattr(instance, field, value)
         return instance
+
+    def update(self, instance):
+        sql, values = instance._get_update_sql()
+        self.conn.execute(sql, values)
+        self.conn.commit()
+
+    def delete(self, table, id):
+        sql, params = table._get_delete_sql(id)
+        self.conn.execute(sql, params)
+        self.conn.commit()
 
 
 class Table:
@@ -112,8 +129,6 @@ class Table:
     def _get_select_all_sql(cls):
         SELECT_ALL_SQL = "SELECT {fields} FROM {name};"
         fields = ["id"]
-
-        # TODO: extract duplicate logic
         for name, field in inspect.getmembers(cls):
             if isinstance(field, Column):
                 fields.append(name)
@@ -125,7 +140,7 @@ class Table:
 
     @classmethod
     def _get_select_where_sql(cls, **kwargs):
-        SELECT_WHERE_SQL = "SELECT {fields} FROM {name} WHERE {where_clause};"
+        SELECT_WHERE_SQL = "SELECT {fields} FROM {name}{where_clause};"
         fields = ["id"]
         for name, field in inspect.getmembers(cls):
             if isinstance(field, Column):
@@ -133,12 +148,44 @@ class Table:
             elif isinstance(field, ForeignKey):
                 fields.append(name + "_id")
 
-        where_clause = " AND ".join([f"{k} = ?" for k in kwargs])
+        where_clause = ""
+        if kwargs:
+            where_clause = " WHERE " + " AND ".join([f"{key} = ?" for key in kwargs])
+
         sql = SELECT_WHERE_SQL.format(
-            name=cls.__name__.lower(), fields=", ".join(fields), where_clause=where_clause
+            name=cls.__name__.lower(),
+            fields=", ".join(fields),
+            where_clause=where_clause,
         )
         params = list(kwargs.values())
         return sql, fields, params
+
+    def _get_update_sql(self):
+        # TODO: similar _insert without placeholders
+        UPDATE_SQL = "UPDATE {name} SET {fields} WHERE id = ?"
+
+        cls = self.__class__
+        fields = []
+        values = []
+        for name, field in inspect.getmembers(cls):
+            if isinstance(field, Column):
+                fields.append(name)
+                values.append(getattr(self, name))
+            elif isinstance(field, ForeignKey):
+                fields.append(name + "_id")
+                values.append(getattr(self, name).id)
+        values.append(getattr(self, "id"))
+
+        sql = UPDATE_SQL.format(
+            name=cls.__name__.lower(), fields=", ".join([f"{field} = ?" for field in fields])
+        )
+        return sql, values
+
+    @classmethod
+    def _get_delete_sql(cls, id):
+        DELETE_SQL = "DELETE FROM {name} WHERE id = ?"
+        sql = DELETE_SQL.format(name=cls.__name__.lower())
+        return sql, [id]
 
 
 class Column:

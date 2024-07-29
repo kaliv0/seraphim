@@ -120,9 +120,11 @@ def test_get_book(db, Author, Book):
     assert book_from_db.author.name == "Arash Kun"
     assert book_from_db.author.id == 2
 
-    with pytest.raises(ValueError) as e:
-        db.get(Book, id=200, title="FizzBuzz")
-    assert str(e.value) == "Book instance with id=200, title=FizzBuzz does not exist"
+    # with pytest.raises(ValueError) as e:
+    #     db.get(Book, id=200, title="FizzBuzz")
+    # assert str(e.value) == "Book instance with id=200 and title=FizzBuzz does not exist"
+    res = db.get(Book, id=200, title="FizzBuzz")
+    assert res == []
 
 
 def test_query_all_books(db, Author, Book):
@@ -140,3 +142,27 @@ def test_query_all_books(db, Author, Book):
     books = db.all(Book)
     assert len(books) == 2
     assert books[1].author.name == "Arash Kun"
+
+
+def test_update_author(db, Author):
+    db.create(Author)
+    john = Author(name="John Doe", age=23)
+    db.save(john)
+
+    john.age = 43
+    john.name = "John Wick"
+    db.update(john)
+
+    john_from_db = db.get(Author, id=john.id)
+    assert john_from_db.age == 43
+    assert john_from_db.name == "John Wick"
+
+
+def test_delete_author(db, Author):
+    db.create(Author)
+    john = Author(name="John Doe", age=23)
+    db.save(john)
+
+    db.delete(Author, id=1)
+    with pytest.raises(Exception):
+        db.get(Author, 1)
