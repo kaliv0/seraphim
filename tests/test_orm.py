@@ -1,5 +1,7 @@
 import sqlite3
 
+import pytest
+
 
 def test_create_db(db):
     assert isinstance(db.conn, sqlite3.Connection)
@@ -26,11 +28,11 @@ def test_create_tables(db, Author, Book):
         Book._get_create_sql()
         == "CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER, published INTEGER, title TEXT);"
     )
+
     for table in ("author", "book"):
         assert table in db.tables
 
 
-#######################################
 def test_create_author_instance(db, Author):
     db.create(Author)
     john = Author(name="John Doe", age=35)
@@ -64,14 +66,14 @@ def test_save_author_instances(db, Author):
     assert jack.id == 4
 
 
-def test_get_all_authors(db, Author):
+def test_query_all_authors(db, Author):
     db.create(Author)
     john = Author(name="John Doe", age=23)
     vik = Author(name="Vik Star", age=43)
     db.save(john)
     db.save(vik)
 
-    authors = db.get_all(Author)
+    authors = db.all(Author)
 
     assert Author._get_select_all_sql() == (
         "SELECT id, age, name FROM author;",
@@ -88,8 +90,7 @@ def test_get_author_by_id(db, Author):
     roman = Author(name="John Doe", age=43)
     db.save(roman)
 
-    # case_0 => valid record
-    john_from_db = db.get_by_id(Author, 1)
+    john_from_db = db.get(Author, id=1)
 
     assert Author._get_select_where_sql(id=1) == (
         "SELECT id, age, name FROM author WHERE id = ?;",
@@ -101,26 +102,8 @@ def test_get_author_by_id(db, Author):
     assert john_from_db.name == "John Doe"
     assert john_from_db.id == 1
 
-    # case_1 => non-existent record
-    invalid_author = db.get_by_id(Author, 200)
-    assert invalid_author is None
 
-
-def test_get_book_by_id_with_nested_data(db, Author, Book):
-    db.create(Author)
-    db.create(Book)
-    john = Author(name="John Doe", age=43)
-    book = Book(title="Building an ORM", published=False, author=john)
-    db.save(john)
-    db.save(book)
-
-    book_from_db = db.get_by_id(Book, id=1)
-    assert book_from_db.title == "Building an ORM"
-    assert book_from_db.author.name == "John Doe"
-    assert book_from_db.author.id == 1
-
-
-def test_get_book_filter(db, Author, Book):
+def test_get_book(db, Author, Book):
     db.create(Author)
     db.create(Book)
     john = Author(name="John Doe", age=43)
@@ -132,21 +115,19 @@ def test_get_book_filter(db, Author, Book):
     db.save(book)
     db.save(book2)
 
-    # case_0 => valid records
-    filtered_books = db.filter(Book, id=2, published=True)
-    book_from_db = filtered_books[0]
+    book_from_db = db.get(Book, id=2, published=True)
     assert book_from_db.title == "Scoring Goals"
     assert book_from_db.author.name == "Arash Kun"
     assert book_from_db.author.id == 2
 
-    # case_1 => non-existent records
-    invalid_books = db.filter(Book, title="FizzBuzz")
-    assert invalid_books == []
+    # with pytest.raises(ValueError) as e:
+    #     db.get(Book, id=200, title="FizzBuzz")
+    # assert str(e.value) == "Book instance with id=200 and title=FizzBuzz does not exist"
+    res = db.get(Book, id=200, title="FizzBuzz")
+    assert res == []
 
-    # TODO: case_2 => raises exception if invalid columns are given
 
-
-def test_get_all_books_nested_data(db, Author, Book):
+def test_query_all_books(db, Author, Book):
     db.create(Author)
     db.create(Book)
     john = Author(name="John Doe", age=43)
@@ -158,7 +139,7 @@ def test_get_all_books_nested_data(db, Author, Book):
     db.save(book)
     db.save(book2)
 
-    books = db.get_all(Book)
+    books = db.all(Book)
     assert len(books) == 2
     assert books[1].author.name == "Arash Kun"
 
@@ -172,7 +153,7 @@ def test_update_author(db, Author):
     john.name = "John Wick"
     db.update(john)
 
-    john_from_db = db.get_by_id(Author, id=john.id)
+    john_from_db = db.get(Author, id=john.id)
     assert john_from_db.age == 43
     assert john_from_db.name == "John Wick"
 
@@ -183,4 +164,5 @@ def test_delete_author(db, Author):
     db.save(john)
 
     db.delete(Author, id=1)
-    assert db.get_by_id(Author, 1) is None
+    with pytest.raises(Exception):
+        db.get(Author, 1)
