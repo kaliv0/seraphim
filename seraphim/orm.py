@@ -17,7 +17,7 @@ class Database:
 
     @property
     def tables(self):
-        SELECT_TABLES_SQL = "SELECT name FROM sqlite_master WHERE type = 'table';"
+        SELECT_TABLES_SQL = "SELECT name FROM sqlite_master WHERE type = 'table'"
         return [x[0] for x in self.conn.execute(SELECT_TABLES_SQL).fetchall()]  # FIXME
 
     def create(self, table):
@@ -93,12 +93,15 @@ class Database:
         self.conn.execute(sql, params)
         self.conn.commit()
 
+    def get(self, table):
+        return QueryObject(db=self, table=table)
+
 
 ######################################
 class Table:
     def __init__(self, **kwargs):
         self._data = {
-            "id": None,  # TODO: don't hardcode 'id'?
+            "id": None,  # TODO: don't hardcode 'id' -> support other PK's
             **kwargs,
         }
 
@@ -115,7 +118,7 @@ class Table:
 
     @classmethod
     def _get_create_sql(cls):
-        CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS {name} ({fields});"
+        CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS {name} ({fields})"
         fields = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
 
         for name, field in inspect.getmembers(cls):
@@ -126,7 +129,7 @@ class Table:
         return CREATE_TABLE_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
 
     def _get_insert_sql(self):
-        INSERT_SQL = "INSERT INTO {name} ({fields}) VALUES ({placeholders});"
+        INSERT_SQL = "INSERT INTO {name} ({fields}) VALUES ({placeholders})"
 
         cls = self.__class__
         fields = []
@@ -149,9 +152,31 @@ class Table:
         )
         return sql, values
 
+    # @classmethod
+    # def _get_select_where_sql(cls, **kwargs):
+    #     SELECT_WHERE_SQL = "SELECT {fields} FROM {name}{where_clause};"
+    #     fields = ["id"]
+    #     for name, field in inspect.getmembers(cls):
+    #         if isinstance(field, Column):
+    #             fields.append(name)
+    #         elif isinstance(field, ForeignKey):
+    #             fields.append(f"{name}_id")
+    #
+    #     where_clause = ""
+    #     if kwargs:
+    #         where_clause = " WHERE " + " AND ".join([f"{key} = ?" for key in kwargs])
+    #
+    #     sql = SELECT_WHERE_SQL.format(
+    #         name=cls.__name__.lower(),
+    #         fields=", ".join(fields),
+    #         where_clause=where_clause,
+    #     )
+    #     params = list(kwargs.values())
+    #     return sql, fields, params
+
     @classmethod
     def _get_select_where_sql(cls, **kwargs):
-        SELECT_WHERE_SQL = "SELECT {fields} FROM {name}{where_clause};"
+        SELECT_WHERE_SQL = "SELECT {fields} FROM {name}{where_clause}"
         fields = ["id"]
         for name, field in inspect.getmembers(cls):
             if isinstance(field, Column):
@@ -173,8 +198,8 @@ class Table:
 
     @classmethod
     def _get_select_all_sql(cls):
-        # TODO: simplify to 'select *'?
-        SELECT_ALL_SQL = "SELECT {fields} FROM {name};"
+        SELECT_ALL_SQL = "SELECT * FROM {name}"
+        # SELECT_ALL_SQL = "SELECT {fields} FROM {name};"
         fields = ["id"]
         for name, field in inspect.getmembers(cls):
             if isinstance(field, Column):
@@ -182,7 +207,8 @@ class Table:
             elif isinstance(field, ForeignKey):
                 fields.append(f"{name}_id")
 
-        sql = SELECT_ALL_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
+        # sql = SELECT_ALL_SQL.format(name=cls.__name__.lower(), fields=", ".join(fields))
+        sql = SELECT_ALL_SQL.format(name=cls.__name__.lower())
         return sql, fields
 
     def _get_update_sql(self):
@@ -226,3 +252,60 @@ class Column:
 class ForeignKey:
     def __init__(self, table):
         self.table = table  # TODO: rename
+
+
+#########################################
+class QueryObject:
+    def __init__(self, db, table):
+        # pointer to db instance to make possible calling "execute" method on queryObject ???
+        self.db = db
+        self.table = table
+        self.name = table.__name__.lower()  # ???
+        self.order_dir = " ASC"
+        self.order_criteria = None
+        self.filter_data = None
+        self.limit_count = None
+
+    def where(self, **kwargs):
+        self.filter_data = kwargs
+        return self
+
+    def order_by(self, criteria, desc=False):
+        self.order_criteria = criteria
+        if desc:
+            self.order_dir = " DESC"
+        return self
+
+    def limit(self, count=None):
+        if count is not None:
+            self.limit_count = count
+        return self
+
+    def execute(self):
+        # similar db.filter
+        sql, fields, params = self.table._get_select_where_sql(**self.filter_data)
+        if self.order_criteria:
+            sql += f" ORDER BY {self.order_criteria}"  # TODO: parametrize order_criteria -> bug in sqlite!?
+            sql += self.order_dir
+        if self.limit_count:
+            sql += " LIMIT ?"
+            params.append(self.limit_count)
+
+        rows = self.db.conn.execute(sql, params).fetchall()
+        if len(rows) == 0:
+            return rows
+
+        result = []
+        for row in rows:
+            instance = type(self.table.__name__, (), {})  # new instance of type self.table
+            for field, value in zip(fields, row):
+                if field.endswith("_id"):
+                    field = field[:-3]
+                    fk = getattr(self.table, field)
+                    value = self.db.get_by_id(fk.table, id=value)
+                # elif getattr(self.table, field, None):
+                #     if type(getattr(self.table, field)) is bool:
+                #         value = True
+                setattr(instance, field, value)
+            result.append(instance)
+        return result

@@ -42,3 +42,15 @@ def Book(Author):
         author = ForeignKey(Author)
 
     return Book
+
+
+#########################################
+@pytest.fixture
+def Novel(Author):
+    class Novel(Table):
+        title = Column(str)
+        published = Column(bool)
+        year = Column(int)
+        author = ForeignKey(Author)
+
+    return Novel

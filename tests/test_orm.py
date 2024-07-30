@@ -20,11 +20,11 @@ def test_create_tables(db, Author, Book):
 
     assert (
         Author._get_create_sql()
-        == "CREATE TABLE IF NOT EXISTS author (id INTEGER PRIMARY KEY AUTOINCREMENT, age INTEGER, name TEXT);"
+        == "CREATE TABLE IF NOT EXISTS author (id INTEGER PRIMARY KEY AUTOINCREMENT, age INTEGER, name TEXT)"
     )
     assert (
         Book._get_create_sql()
-        == "CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER, published INTEGER, title TEXT);"
+        == "CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER, published INTEGER, title TEXT)"
     )
     for table in ("author", "book"):
         assert table in db.tables
@@ -46,7 +46,7 @@ def test_save_author_instances(db, Author):
     john = Author(name="John Doe", age=23)
     db.save(john)
     assert john._get_insert_sql() == (
-        "INSERT INTO author (age, name) VALUES (?, ?);",
+        "INSERT INTO author (age, name) VALUES (?, ?)",
         [23, "John Doe"],
     )
     assert john.id == 1
@@ -74,7 +74,8 @@ def test_get_all_authors(db, Author):
     authors = db.get_all(Author)
 
     assert Author._get_select_all_sql() == (
-        "SELECT id, age, name FROM author;",
+        # "SELECT id, age, name FROM author",
+        "SELECT * FROM author",
         ["id", "age", "name"],
     )
     assert len(authors) == 2
@@ -92,7 +93,7 @@ def test_get_author_by_id(db, Author):
     john_from_db = db.get_by_id(Author, 1)
 
     assert Author._get_select_where_sql(id=1) == (
-        "SELECT id, age, name FROM author WHERE id = ?;",
+        "SELECT id, age, name FROM author WHERE id = ?",
         ["id", "age", "name"],
         [1],
     )
@@ -144,6 +145,49 @@ def test_get_book_filter(db, Author, Book):
     assert invalid_books == []
 
     # TODO: case_2 => raises exception if invalid columns are given
+
+
+def test_get_book_filter_alternative(db, Author, Novel):
+    db.create(Author)
+    db.create(Novel)
+    john = Author(name="John Doe", age=43)
+    arash = Author(name="Arash Kun", age=50)
+    book = Novel(title="Burnt Sushi", published=True, year=1907, author=john)
+    book2 = Novel(title="Building an ORM", published=True, year=1907, author=john)
+    book3 = Novel(title="Scoring Goals", published=True, year=1907, author=arash)
+    book4 = Novel(title="Lunar", published=False, year=None, author=arash)
+    db.save(john)
+    db.save(arash)
+    db.save(book)
+    db.save(book2)
+    db.save(book3)
+    db.save(book4)
+
+    # case_0 => valid records
+    filtered_books = (
+        db.get(Novel).where(published=True, year=1907).order_by("id", desc=True).limit(2).execute()
+    )
+    assert len(filtered_books) == 2
+
+    book_from_db1 = filtered_books[0]
+    assert book_from_db1.id == 3
+    assert book_from_db1.title == "Scoring Goals"
+    assert book_from_db1.year == 1907
+    assert book_from_db1.published == 1  # TODO: transform 1 to True
+    assert book_from_db1.author.name == "Arash Kun"
+    assert book_from_db1.author.id == 2
+
+    book_from_db2 = filtered_books[1]
+    assert book_from_db2.id == 2
+    assert book_from_db2.title == "Building an ORM"
+    assert book_from_db2.year == 1907
+    assert book_from_db2.published == 1
+    assert book_from_db2.author.name == "John Doe"
+    assert book_from_db2.author.id == 1
+
+    # case_1 => non-existent records
+    # invalid_books = db.filter(Book, title="FizzBuzz")
+    # assert invalid_books == []
 
 
 def test_get_all_books_nested_data(db, Author, Book):
